@@ -1,8 +1,27 @@
-# docker-build
+USAGE 
+    docker run -ti sternmotor/dnsmasq:latest --help
+    docker run -d sternmotor/dnsmasq:latest 
 
-This project houses a template build directory for setting up a docker image for server containers. Server containers may be a little more complex inside than usual application containers.
-Therefore, a command-line handler script for executing docker container actions like `help`, `start`, `stop`is prepared. This script is meant to act as init system and first-time-initialisation script.
+DESCRIPTION
+    Small docker demo image showing CMD and ENTRYPOINT script setup
 
-The `Dockerfile` itself is adapted for serving the mentioned start script.
+PARAMETER CMD
+    CMD may be any option as listed below. All other expressions are run 
+    as shell command in started container.
 
-Furthermore, a license file and a readme file are prepared.
+    run     : run dnsmasq, serving as configured
+    reload  : re-read dnsmasq config file and content (dnsmasq -s reload)
+    test    : test configuration for errors
+    version : show dnsmasq version and compile options
+    help    : show this help
+    login   : login to root shell in container
+
+    All options may be passed as CMD in Dockerfile or at container startup:
+        docker run -ti sternmotor/dnsmasq:8.2 version
+
+    All options may be passed to a running container like 
+        docker exec -ti dnsmasq_test login
+
+
+ToDo
+"stop" option

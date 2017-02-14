@@ -1,0 +1,88 @@
+#!/bin/sh
+# OVERVIEW
+# This entrypoint script provides 
+#   * standardized action options for dockerized applications,
+#   * setup section for container initialisation at first run
+#   * help option for docker container
+# See README.md
+# 
+# At first run of container, the setup shell commands specified in function
+# setup() below are executed
+#
+# The actions specified below may be used as CMD in dockerfile or on command 
+# line when creating a container:
+# 
+# EXAMPLE
+#   Start daemon within container
+#
+#   Dockerfile:
+#       COPY entrypoint /usr/local/sbin/docker-entrypoint
+#       ENTRYPOINT ["docker-entrypoint"]
+#       CMD["start"]
+#
+#   # docker run -d sternmotor/dnsmasq:latest start
+#
+# EXAMPLE 
+#   Display dnsmasq version
+#   # docker run -ti sternmotor/dnsmasq:latest version
+#
+# EXAMPLE
+#   docker run -ti sternmotor/dnsmasq:latest login
+#   Login to container after starting it, executing default shell
+
+# -----------------------------------------------------------------------------
+# script contants and default values
+# -----------------------------------------------------------------------------
+
+FIRSTRUN_MARKER='/var/lock/docker/setup_finished'
+DEFAULT_ACTION='help' # scripts may be called with no args, manually
+
+# -----------------------------------------------------------------------------
+# run setup at container creation
+# -----------------------------------------------------------------------------
+set -eu 
+
+
+# put everything here what needs to be done at first run, use env vars
+setup() {
+    /bin/true # dummy line, remove it
+}
+
+if ! test -e "$FIRSTRUN_MARKER"; then
+    mkdir --parents -- "$FIRSTRUN_MARKER"
+    setup
+fi
+
+# -----------------------------------------------------------------------------
+# run dnsmasq container with pre-defined actions or execute shell command
+# -----------------------------------------------------------------------------
+case "${1:-$DEFAULT_ACTION}" in
+    start) 
+        # start daemon in foreground (regular docker start)
+        exec dnsmasq --keep-in-foreground --no-daemon
+    ;;
+    reload) 
+        # re-read config file(s) but do not break continueous operation
+        echo "Config file reload is not supported by dnsmasq"
+    ;;
+    test) 
+        # test config file correctness without interupting daemon operation 
+        exec dnsmasq --test
+    ;;
+    version) 
+        # print version information
+        exec dnsmasq --version
+    ;;
+    login) 
+        # execute shell login
+        exec /bin/bash -l
+    ;;
+    help) 
+        # print help about container operation (and this option stuff)
+        exec cat '/docker-readme.md'
+    ;;
+    *)  
+        # run any shell command specified at command line
+        exec "${@:-}"
+    ;;
+esac
