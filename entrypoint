@@ -1,61 +1,34 @@
 #!/bin/sh
-# OVERVIEW
-# This entrypoint script provides 
-#   * standardized action options for dockerized applications,
-#   * setup section for container initialisation at first run
-#   * help option for docker container
-# See README.md
-# 
-# At first run of container, the setup shell commands specified in function
-# setup() below are executed
-#
-# The actions specified below may be used as CMD in dockerfile or on command 
-# line when creating a container:
-# 
-# EXAMPLE
-#   Start daemon within container
-#
-#   Dockerfile:
-#       COPY entrypoint /usr/local/sbin/docker-entrypoint
-#       ENTRYPOINT ["docker-entrypoint"]
-#       CMD["start"]
-#
-#   # docker run -d sternmotor/dnsmasq:latest start
-#
-# EXAMPLE 
-#   Display dnsmasq version
-#   # docker run -ti sternmotor/dnsmasq:latest version
-#
-# EXAMPLE
-#   docker run -ti sternmotor/dnsmasq:latest login
-#   Login to container after starting it, executing default shell
+# See README.md in build directory
 
 # -----------------------------------------------------------------------------
-# script contants and default values
+# CONSTANTS AND DEFAULTS
 # -----------------------------------------------------------------------------
 
-FIRSTRUN_MARKER='/var/lock/docker/setup_finished'
+FIRSTRUN_MARKER='/docker-setup_done-marker'
 DEFAULT_ACTION='help' # scripts may be called with no args, manually
 
-# -----------------------------------------------------------------------------
-# run setup at container creation
-# -----------------------------------------------------------------------------
-set -eu 
 
+# -----------------------------------------------------------------------------
+# SETUP 
+# -----------------------------------------------------------------------------
+
+set -eu 
 
 # put everything here what needs to be done at first run, use env vars
 setup() {
     /bin/true # dummy line, remove it
 }
 
-if ! test -e "$FIRSTRUN_MARKER"; then
-    mkdir --parents -- "$FIRSTRUN_MARKER"
+if ! test -d "$FIRSTRUN_MARKER"; then
+    touch "$FIRSTRUN_MARKER"
     setup
 fi
 
 # -----------------------------------------------------------------------------
-# run dnsmasq container with pre-defined actions or execute shell command
+# START OPTIONS
 # -----------------------------------------------------------------------------
+
 case "${1:-$DEFAULT_ACTION}" in
     start) 
         # start daemon in foreground (regular docker start)

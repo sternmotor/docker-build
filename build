@@ -1,0 +1,68 @@
+#!/bin/sh
+# Commands for building and testing this docker image - see README.md
+# standard is update
+
+# -----------------------------------------------------------------------------
+# CONSTANTS AND DEFAULTS
+# -----------------------------------------------------------------------------
+
+TAG='latest'
+NAME='dnsmasq'
+REPOSITORY="sternmotor/$NAME"
+DEFAULT_ACTION='update'
+
+set -eu 
+
+# -----------------------------------------------------------------------------
+# START 
+# -----------------------------------------------------------------------------
+
+ImageTag="$REPOSITORY:$TAG"
+ScriptDir="$(dirname $0)"
+
+containers_by_image() {
+    docker ps --all --quiet --filter ancestor="$ImageTag"
+}
+
+case "${1:-$DEFAULT_ACTION}" in
+    update) 
+        # build image as fast as possible - use cache, no updates for downloads
+	docker build --rm -t "$ImageTag" "$ScriptDir" 
+    ;;
+    rebuild) 
+        # build image as fresh as possible - no cache, download latest
+	docker build --rm --pull --no-cache -t "$ImageTag" "$ScriptDir" 
+    ;;
+    run) 
+        # run container one time, at foreground
+	docker run --name "${NAME}-debug" "$ImageTag" start
+    ;;
+    start) 
+        # start container as background daemon
+	docker run --detach  --name "${NAME}-debug" "$ImageTag" start
+    ;;
+    stop) 
+        # stop running container
+	containers_by_image | while read id; do
+            echo "Stopping and removing: $id"
+	    docker stop $id >/dev/null
+            docker rm $id >/dev/null
+        done
+    ;;
+    login) 
+        # start container if not running and login to started or running container
+        if [ -z "$(containers_by_image)" ]; then
+            echo "No running container found, creating one-shot container"
+            docker run --rm --tty --interactive  --name "${NAME}-debug" "$ImageTag" login
+        else
+	    ID=$(containers_by_image | head -n 1 )
+            echo "Attaching to first found running \"$ImageTag\" container \"$ID\""
+	    docker exec --tty --interactive "$ID" /starter login
+        fi
+    ;; 
+    *)  
+        # unsupported option
+        echo 'Option not supported, try "login", "rebuild", "run", "start", "stop" or "update"'
+    ;;
+esac
+

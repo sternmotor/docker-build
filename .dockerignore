@@ -1,0 +1,11 @@
+# Git files
+.git
+.gitignore
+.gitmodules
+
+#build files
+build
+
+# Information files
+LICENSE
+README.md

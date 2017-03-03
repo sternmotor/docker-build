@@ -5,6 +5,7 @@
 # BUILD AND IMAGE ENVIRONMENT ------------------------------------------------
 
 FROM debian:jessie
+MAINTAINER Gunnar Mann <dev@sternmotor.net>
 
 # pin down version so image gets re-build at version change
 LABEL version='8.2' description='Dockerfile for image development' 
@@ -31,16 +32,42 @@ RUN apt-get update --quiet > /dev/null \
        zip \
  && apt-get clean && rm -rf /tmp/* /var/tmp/*
 
+# Download and install seafile
+#ENV VERSION='6.0.4' \
+#    MIRROR='https://bintray.com/artifact/download/seafile-org/seafile'
+#RUN wget "${MIRROR}/seafile-server_${VERSION}_x86-64.tar.gz" --quiet \
+#    --no-check-certificate --output-document="/tmp/seafile.tar.gz" \
+#&& tar -xzpf "/tmp/seafile.tar.gz" --directory /usr/share \
+#&& rm "/tmp/seafile.tar.gz" \
+#&& ln -s  "/usr/share/seafile-server-${VERSION}" /usr/share/seafile \
+#&& ln -sf "/usr/share/seafile-server-${VERSION}" /srv/seafile-server-latest
+
+
 # CONFIGURE APPLICATION ------------------------------------------------------
 
-# Deploy startup script and help file to file system root
-COPY "entrypoint" "/usr/local/bin/docker-entrypoint"
-COPY "README.md" "/usr/share/docker-readme.md"
+# users
+#RUN useradd -m -d "$MAILDIR" --uid 1000 --gid dovecot \
+#    -s /usr/sbin/nologin "$LOCAL_MAIL_USER" \
+# && usermod --password $(mkpasswd "$LOCAL_MAIL_PASS" ) imap
+
+# config files
+#RUN sed -i "s|^mail_location =.*|mail_location = maildir:$MAILDIR|" \
+#    /etc/dovecot/conf.d/10-mail.conf 
+
+# forward nginx logs and error logs to docker log collector
+#RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+# && ln -sf /dev/stderr /var/log/nginx/error.log \
+# && rm -rf /etc/nginx/conf.d/* /etc/nginx/sites-enabled/* \
+# && install --owner nginx --group nginx --directory -- /var/tmp/nginx /var/cache/nginx 
 
 # DOCKER INTEGRATION ---------------------------------------------------------
 
+# shared volumes and ports
 VOLUME [ "/srv" ]
 EXPOSE 53
 
-ENTRYPOINT [ "docker-entrypoint" ]
+# startup script and help file
+COPY "entrypoint" "/starter"
+ENTRYPOINT [ "/starter" ]
 CMD [ "run" ] # start, reload, test, version, login, help
+
